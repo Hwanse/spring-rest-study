@@ -30,7 +30,7 @@ public class EventControllerTest {
   ObjectMapper objectMapper;
 
   @Test
-  @DisplayName("event create API - success")
+  @DisplayName("Event 등록 API - 201")
   public void createEvent() throws Exception {
     // given
     EventDto event = EventDto
@@ -65,7 +65,7 @@ public class EventControllerTest {
   }
 
   @Test
-  @DisplayName("event create API - bad request error")
+  @DisplayName("Event 등록 API - bad request (Dto에 맞지 않는 입력값)")
   public void createEvent_badRequest() throws Exception {
     // given
     Event event = Event
@@ -98,8 +98,24 @@ public class EventControllerTest {
   }
 
   @Test
-  @DisplayName("event create API - bad request (empty_input)")
+  @DisplayName("Event 등록 API - bad request (비어있는 입력값)")
   public void createEvent_badRequest_emptyInput() throws Exception {
+    // given
+    EventDto event = EventDto.builder().build();
+
+    // then
+    mockMvc.perform(post("/api/events")
+                      .contentType(MediaType.APPLICATION_JSON_VALUE)
+                      .content(objectMapper.writeValueAsString(event)))
+           .andDo(print())
+           .andExpect(status().isBadRequest())
+    ;
+
+  }
+
+  @Test
+  @DisplayName("event create API - bad request (비즈니스 규칙에 맞지 않는 입력)")
+  public void createEvent_badRequest_wrongValue() throws Exception {
     // given
     EventDto eventDto = EventDto
       .builder()
