@@ -3,10 +3,12 @@ package me.hwanse.springreststudy.events;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 import java.net.URI;
+import javax.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +28,11 @@ public class EventController {
   // HATEOAS 프로젝트에서 구 버전은 ControllerLinkBuilder 클래스 안에 포함되어 있었지만
   // 현재 버전에서는 WebMvcLinkBuilder 로 사용한다.
   @PostMapping
-  public ResponseEntity createEvent(@RequestBody EventDto eventDto) {
+  public ResponseEntity createEvent(@Valid @RequestBody EventDto eventDto, Errors errors) {
+    if (errors.hasErrors()) {
+      return ResponseEntity.badRequest().build();
+    }
+
     Event event = modelMapper.map(eventDto, Event.class);
     Event newEvent = eventRepository.save(event);
 

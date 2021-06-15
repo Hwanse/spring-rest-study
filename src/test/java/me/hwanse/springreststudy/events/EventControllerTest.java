@@ -66,7 +66,7 @@ public class EventControllerTest {
 
   @Test
   @DisplayName("event create API - bad request error")
-  public void createEvent_bad_request() throws Exception {
+  public void createEvent_badRequest() throws Exception {
     // given
     Event event = Event
       .builder()
@@ -95,6 +95,23 @@ public class EventControllerTest {
            .andExpect(status().isBadRequest())
     ;
 
+  }
+
+  @Test
+  @DisplayName("event create - bad request (empty_input)")
+  public void createEvent_badRequest_emptyInput() throws Exception {
+    // given
+    EventDto eventDto = EventDto.builder().build();
+
+    // when
+
+    // then
+    mockMvc.perform(post("/api/events")
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .content(objectMapper.writeValueAsString(eventDto)))
+           .andDo(print())
+           .andExpect(status().isBadRequest())
+    ;
   }
 
 }
