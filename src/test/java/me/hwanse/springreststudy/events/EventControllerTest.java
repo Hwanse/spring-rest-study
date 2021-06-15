@@ -98,10 +98,22 @@ public class EventControllerTest {
   }
 
   @Test
-  @DisplayName("event create - bad request (empty_input)")
+  @DisplayName("event create API - bad request (empty_input)")
   public void createEvent_badRequest_emptyInput() throws Exception {
     // given
-    EventDto eventDto = EventDto.builder().build();
+    EventDto eventDto = EventDto
+      .builder()
+      .name("Spring")
+      .description("REST API Development with Spring")
+      .beginEnrollmentDateTime(LocalDateTime.of(2021, 6, 18, 22, 50))
+      .closeEnrollmentDateTime(LocalDateTime.of(2021, 6, 16, 22, 50))
+      .beginEventDateTime(LocalDateTime.of(2021, 6, 18, 12, 0))
+      .endEventDateTime(LocalDateTime.of(2021, 6, 17, 12, 0))
+      .basePrice(10000)
+      .maxPrice(200)
+      .limitOfEnrollment(100)
+      .location("강남")
+      .build();
 
     // when
 

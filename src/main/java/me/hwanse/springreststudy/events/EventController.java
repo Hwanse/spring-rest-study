@@ -19,16 +19,24 @@ public class EventController {
 
   private final EventRepository eventRepository;
   private final ModelMapper modelMapper;
+  private final EventValidator eventValidator;
 
-  public EventController(EventRepository eventRepository, ModelMapper modelMapper) {
+  public EventController(EventRepository eventRepository, ModelMapper modelMapper, EventValidator eventValidator) {
     this.eventRepository = eventRepository;
     this.modelMapper = modelMapper;
+    this.eventValidator = eventValidator;
   }
 
   // HATEOAS 프로젝트에서 구 버전은 ControllerLinkBuilder 클래스 안에 포함되어 있었지만
   // 현재 버전에서는 WebMvcLinkBuilder 로 사용한다.
   @PostMapping
   public ResponseEntity createEvent(@Valid @RequestBody EventDto eventDto, Errors errors) {
+    if (errors.hasErrors()) {
+      return ResponseEntity.badRequest().build();
+    }
+
+    eventValidator.validate(eventDto, errors);
+
     if (errors.hasErrors()) {
       return ResponseEntity.badRequest().build();
     }
