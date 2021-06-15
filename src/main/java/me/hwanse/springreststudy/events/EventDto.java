@@ -1,30 +1,18 @@
 package me.hwanse.springreststudy.events;
 
 import java.time.LocalDateTime;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-@Getter @Setter
-@EqualsAndHashCode(of = "id")
-public class Event {
-
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+@AllArgsConstructor
+@Data
+public class EventDto {
 
   private String name;
   private String description;
@@ -36,10 +24,5 @@ public class Event {
   private int basePrice;  // Optional - 기본 등록비
   private int maxPrice;   // Optional - 최대 등록비
   private int limitOfEnrollment;
-  private boolean offline;
-  private boolean free;
-
-  @Enumerated(EnumType.STRING)
-  private EventStatus eventStatus = EventStatus.DRAFT;
 
 }

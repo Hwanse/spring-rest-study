@@ -3,6 +3,7 @@ package me.hwanse.springreststudy.events;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 import java.net.URI;
+import org.modelmapper.ModelMapper;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -15,21 +16,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class EventController {
 
   private final EventRepository eventRepository;
+  private final ModelMapper modelMapper;
 
-  public EventController(EventRepository eventRepository) {
+  public EventController(EventRepository eventRepository, ModelMapper modelMapper) {
     this.eventRepository = eventRepository;
+    this.modelMapper = modelMapper;
   }
 
   // HATEOAS 프로젝트에서 구 버전은 ControllerLinkBuilder 클래스 안에 포함되어 있었지만
   // 현재 버전에서는 WebMvcLinkBuilder 로 사용한다.
   @PostMapping
-  public ResponseEntity createEvent(@RequestBody Event event) {
+  public ResponseEntity createEvent(@RequestBody EventDto eventDto) {
+    Event event = modelMapper.map(eventDto, Event.class);
     Event newEvent = eventRepository.save(event);
 
     // linkTo : 컨트롤러나 핸들러 메서드로 부터 URI 정보를 읽어올 때 사용하는 메서드
     // methodOn : 인자로 들어온 Controller class를 감싸 해당 컨트롤러의 핸들러 메서드 정보를 가져오기 위한 Wrapper
     URI createdUri = linkTo(EventController.class).slash(newEvent.getId()).toUri();
-    return ResponseEntity.created(createdUri).body(event);
+    return ResponseEntity.created(createdUri).body(newEvent);
   }
 
 }
