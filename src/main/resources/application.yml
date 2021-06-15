@@ -1,0 +1,5 @@
+spring:
+  jackson:
+    # deserialization 에서 변환할 수 없는 포맷의 데이터일 경우 error 를 반환하도록 설정
+    # spring 에서 error를 catch하면 기본적으로 해당 API 는 bad request 응답을 반환한다
+    deserialization.fail-on-unknown-properties: true
