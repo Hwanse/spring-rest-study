@@ -42,6 +42,7 @@ public class EventController {
     }
 
     Event event = modelMapper.map(eventDto, Event.class);
+    event.update();
     Event newEvent = eventRepository.save(event);
 
     // linkTo : 컨트롤러나 핸들러 메서드로 부터 URI 정보를 읽어올 때 사용하는 메서드
