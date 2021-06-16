@@ -5,6 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class EventTest {
 
@@ -33,60 +37,53 @@ class EventTest {
     assertThat(event.getDescription()).isEqualTo(description);
   }
 
-  @Test
+  @ParameterizedTest
   @DisplayName("event 도메인 free 여부 테스트")
-  public void test_free() throws Exception {
+  @MethodSource // default로 테스트할 메서드와 동일한 이름의 팩토리 메서드를 찾아서 params로 넣어준다
+  public void test_free(int basePrice, int maxPrice, boolean isFree) throws Exception {
     // given
     Event event = Event.builder()
-                       .basePrice(0)
-                       .maxPrice(0)
+                       .basePrice(basePrice)
+                       .maxPrice(maxPrice)
                        .build();
     // when
     event.update();
 
     // then
-    assertThat(event.isFree()).isTrue();
-
-    event = Event.builder()
-                 .basePrice(100)
-                 .maxPrice(0)
-                 .build();
-
-    event.update();
-
-    assertThat(event.isFree()).isFalse();
-
-    event = Event.builder()
-                 .basePrice(0)
-                 .maxPrice(100)
-                 .build();
-
-    event.update();
-
-    assertThat(event.isFree()).isFalse();
+    assertThat(event.isFree()).isEqualTo(isFree);
   }
 
-  @Test
-  @DisplayName("offline 여부 테스트")
-  public void test_offline() throws Exception {
+  // params 테스트를 할 경우 아래와 같은 팩토리 메서드를 정의가 가능하며 반드시 static 메서드이어야 동작한다.
+  private static Object[] test_free() {
+    return new Object[] {
+      new Object[] {0, 0, true},
+      new Object[] {100, 0, false},
+      new Object[] {0, 100, false},
+      new Object[] {100, 200, false}
+    };
+  }
+
+  @ParameterizedTest
+  @DisplayName("event 도메인 offline 여부 테스트")
+  @MethodSource
+  public void test_offline(String location, boolean isOffline) throws Exception {
     // given
     Event event = Event.builder()
-                       .location("강남")
+                       .location(location)
                        .build();
     // when
     event.update();
 
     // then
-    assertThat(event.isOffline()).isTrue();
+    assertThat(event.isOffline()).isEqualTo(isOffline);
+  }
 
-    // given
-    event = Event.builder()
-                 .build();
-    // when
-    event.update();
-
-    // then
-    assertThat(event.isOffline()).isFalse();
+  private static Object[] test_offline() {
+    return new Object[] {
+      new Object[] {"강남", true},
+      new Object[] {null, false},
+      new Object[] {"     ", false}
+    };
   }
 
 }
