@@ -1,6 +1,15 @@
 package me.hwanse.springreststudy.events;
 
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.linkWithRel;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -70,7 +79,58 @@ public class EventControllerTest {
            .andExpect(jsonPath("_links.self").exists())
            .andExpect(jsonPath("_links.query-events").exists())
            .andExpect(jsonPath("_links.update-event").exists())
-           .andDo(document("create-event"));
+           .andDo(document("create-event",
+                           links(
+                             linkWithRel("self").description("link to self"),
+                             linkWithRel("query-events").description("link to query events"),
+                             linkWithRel("update-event").description("link to update an existing event")
+                           ),
+                           requestHeaders(
+                             headerWithName(HttpHeaders.ACCEPT).description("accept header"),
+                             headerWithName(HttpHeaders.CONTENT_TYPE).description("content type header")
+                           ),
+                           requestFields(
+                             fieldWithPath("name").description("name of new event"),
+                             fieldWithPath("description").description("description of new event"),
+                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of new event"),
+                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of new event"),
+                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of new event"),
+                             fieldWithPath("endEventDateTime").description("endEventDateTime of new event"),
+                             fieldWithPath("location").description("location of new event"),
+                             fieldWithPath("basePrice").description("basePrice of new event"),
+                             fieldWithPath("maxPrice").description("maxPrice of new event"),
+                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of new event")
+                           ),
+                           responseHeaders(
+                             headerWithName(HttpHeaders.LOCATION).description("location header"),
+                             headerWithName(HttpHeaders.CONTENT_TYPE).description("content type header")
+                           ),
+                           responseFields(  // 해당 메서드는 응답 본문의 모든 필드를 description 해야한다. 안하면 Test 코드 오류 출력
+                             fieldWithPath("id").description("id of new event"),
+                             fieldWithPath("name").description("name of new event"),
+                             fieldWithPath("description").description("description of new event"),
+                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of new event"),
+                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of new event"),
+                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of new event"),
+                             fieldWithPath("endEventDateTime").description("endEventDateTime of new event"),
+                             fieldWithPath("location").description("location of new event"),
+                             fieldWithPath("basePrice").description("basePrice of new event"),
+                             fieldWithPath("maxPrice").description("maxPrice of new event"),
+                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of new event"),
+                             fieldWithPath("offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("free").description("it tells is this event is free or not"),
+                             fieldWithPath("eventStatus").description("eventStatus of new event"),
+                             fieldWithPath("_links.*").ignored(), // 이렇게 필드를 명시적으로 ignore 하는 것도 가능하다
+                             fieldWithPath("_links.self.*").ignored(),
+                             fieldWithPath("_links.query-events.*").ignored(),
+                             fieldWithPath("_links.update-event.*").ignored()
+                             /*fieldWithPath("_links.self.href").description("self resource link"),
+                             fieldWithPath("_links.query-events.href").description("query-events resource link to other resources"),
+                             fieldWithPath("_links.update-event.href").description("update-event resource link to other resources")*/
+                           )
+                           //relaxedResponseFields() : 해당 메서드는 인자로 명시된 필드만 문서화한다. (문서의 일부분만 테스트)
+                  ))
+    ;
   }
 
   @Test
