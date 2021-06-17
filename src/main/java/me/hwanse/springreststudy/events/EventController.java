@@ -5,7 +5,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import java.net.URI;
 import javax.validation.Valid;
 import org.modelmapper.ModelMapper;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
@@ -27,7 +29,7 @@ public class EventController {
     this.eventValidator = eventValidator;
   }
 
-  // HATEOAS 프로젝트에서 구 버전은 ControllerLinkBuilder 클래스 안에 포함되어 있었지만
+  // Spring HATEOAS 프로젝트에서 구 버전은 ControllerLinkBuilder 클래스 안에 포함되어 있었지만
   // 현재 버전에서는 WebMvcLinkBuilder 로 사용한다.
   @PostMapping
   public ResponseEntity createEvent(@Valid @RequestBody EventDto eventDto, Errors errors) {
@@ -47,8 +49,15 @@ public class EventController {
 
     // linkTo : 컨트롤러나 핸들러 메서드로 부터 URI 정보를 읽어올 때 사용하는 메서드
     // methodOn : 인자로 들어온 Controller class를 감싸 해당 컨트롤러의 핸들러 메서드 정보를 가져오기 위한 Wrapper
-    URI createdUri = linkTo(EventController.class).slash(newEvent.getId()).toUri();
-    return ResponseEntity.created(createdUri).body(newEvent);
+    WebMvcLinkBuilder selfLinkBuilder = linkTo(EventController.class).slash(newEvent.getId());
+    URI createdUri = selfLinkBuilder.toUri();
+    EventResource eventResource = new EventResource(newEvent);
+//    EventResourceV2 eventResource = new EventResourceV2(newEvent);
+    eventResource.add(linkTo(EventController.class).withRel("query-events"));
+    // 현재 Link와 동일하지만 관계(행위)가 다를 때에 이런식으로 코딩이 가능하다
+    // 같은 URI를 가지지만 update-event 업데이트 요청은 PUT Method로 구분되어 있기 때문
+    eventResource.add(selfLinkBuilder.withRel("update-event"));
+    return ResponseEntity.created(createdUri).body(eventResource);
   }
 
 }
