@@ -18,6 +18,9 @@ public class ErrorsSerializer extends JsonSerializer<Errors> {
   @Override
   public void serialize(Errors errors, JsonGenerator generator, SerializerProvider serializerProvider)
     throws IOException {
+    // 스프링 부트 2.3버전으로 업데이트되면서 같이 버전업된 jackson 라이브러리가 array를 바로 만드는 것을
+    // 허용하지 않아서 오류가 발생하게된다. 따라서 array의 필드 네이밍을 해줘야 한다
+    generator.writeFieldName("errors");
     generator.writeStartArray();
     errors.getFieldErrors().stream().forEach(e -> {
       try {

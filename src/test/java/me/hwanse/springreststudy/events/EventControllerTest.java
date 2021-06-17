@@ -215,11 +215,13 @@ public class EventControllerTest {
                     .content(objectMapper.writeValueAsString(eventDto)))
            .andDo(print())
            .andExpect(status().isBadRequest())
-           .andExpect(jsonPath("$[0].objectName").exists())
-           .andExpect(jsonPath("$[0].field").exists())
-           .andExpect(jsonPath("$[0].defaultMessage").exists())
-           .andExpect(jsonPath("$[0].code").exists())
-           .andExpect(jsonPath("$[0].rejectedValue").exists())
+           .andExpect(jsonPath("errors[0].objectName").exists())
+           .andExpect(jsonPath("errors[0].field").exists())
+           .andExpect(jsonPath("errors[0].defaultMessage").exists())
+           .andExpect(jsonPath("errors[0].code").exists())
+           .andExpect(jsonPath("errors[0].rejectedValue").exists())
+           // 홈페이지에서 에러 발생시 첫 화면으로 돌아가듯이 REST API도 Index API 링크를 같이 반환해준다
+           .andExpect(jsonPath("_links.index").exists())
     ;
   }
 
