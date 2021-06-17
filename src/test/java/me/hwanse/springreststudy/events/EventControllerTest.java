@@ -79,11 +79,13 @@ public class EventControllerTest {
            .andExpect(jsonPath("_links.self").exists())
            .andExpect(jsonPath("_links.query-events").exists())
            .andExpect(jsonPath("_links.update-event").exists())
+           .andExpect(jsonPath("_links.profile").exists())
            .andDo(document("create-event",
                            links(
                              linkWithRel("self").description("link to self"),
                              linkWithRel("query-events").description("link to query events"),
-                             linkWithRel("update-event").description("link to update an existing event")
+                             linkWithRel("update-event").description("link to update an existing event"),
+                             linkWithRel("profile").description("link to profile")
                            ),
                            requestHeaders(
                              headerWithName(HttpHeaders.ACCEPT).description("accept header"),
@@ -123,7 +125,8 @@ public class EventControllerTest {
                              fieldWithPath("_links.*").ignored(), // 이렇게 필드를 명시적으로 ignore 하는 것도 가능하다
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.query-events.*").ignored(),
-                             fieldWithPath("_links.update-event.*").ignored()
+                             fieldWithPath("_links.update-event.*").ignored(),
+                             fieldWithPath("_links.profile.*").ignored()
                              /*fieldWithPath("_links.self.href").description("self resource link"),
                              fieldWithPath("_links.query-events.href").description("query-events resource link to other resources"),
                              fieldWithPath("_links.update-event.href").description("update-event resource link to other resources")*/

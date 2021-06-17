@@ -77,6 +77,11 @@
 
   <build>
     <plugins>
+      <!-- 아래 플러그인이 spring rest docs 문서를 만들어주는 역할을 수행 -->
+      <!--
+      asciidoctor maven plugin은 default로 src/main/asciidoc 디렉토리 아래에 있는
+      모든 asciidoc 문서를 html 문서로 만들어준다
+      -->
       <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
@@ -102,6 +107,44 @@
           </dependency>
         </dependencies>
       </plugin>
+      <!--
+      asciidoc maven plugin 이 생성한 rest docs html 문서를 복사해서 옮겨주는 역할을 수행.
+      (주의, maven-resources-plugin은 asciidoc maven plugin 스크립트 다음에 기입해줘야 한다.
+      asciidoc maven plugin 의 작업이 먼저 선행되어야 하기 때문)
+
+      어떻게 ?
+      1. asciidoc maven plugin 에서 Rest API 문서를 생성
+      2. 위 작업이 선행된 후 maven resources plugin 에서 해당 문서를 옮기는 과정을 수행한다
+      3. resources > resource > directory 태그에 명시된 경로 아래에 생성된 html 문서를
+      4. outputDirectory 태그에 명시된 빌드된 target 경로 아래에 html 문서들을 복사하고 옮긴다
+      -->
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>2.7</version>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>
+                ${project.build.outputDirectory}/static/docs
+              </outputDirectory>
+              <resources>
+                <resource>
+                  <directory>
+                    ${project.build.directory}/generated-docs
+                  </directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- lombok -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

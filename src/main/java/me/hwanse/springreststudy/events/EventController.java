@@ -57,6 +57,7 @@ public class EventController {
     // 현재 Link와 동일하지만 관계(행위)가 다를 때에 이런식으로 코딩이 가능하다
     // 같은 URI를 가지지만 update-event 업데이트 요청은 PUT Method로 구분되어 있기 때문
     eventResource.add(selfLinkBuilder.withRel("update-event"));
+    eventResource.add(Link.of("/docs/index.html#resources-events-create").withRel("profile"));
     return ResponseEntity.created(createdUri).body(eventResource);
   }
 
