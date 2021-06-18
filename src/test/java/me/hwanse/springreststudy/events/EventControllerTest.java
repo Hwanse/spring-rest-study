@@ -10,6 +10,9 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -18,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
+import java.util.stream.IntStream;
 import me.hwanse.springreststudy.common.RestDocsConfiguration;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +49,9 @@ public class EventControllerTest {
 
   @Autowired
   ObjectMapper objectMapper;
+
+  @Autowired
+  EventRepository eventRepository;
 
   @Test
   @DisplayName("Event 등록 API - 201")
@@ -223,6 +230,79 @@ public class EventControllerTest {
            // 홈페이지에서 에러 발생시 첫 화면으로 돌아가듯이 REST API도 Index API 링크를 같이 반환해준다
            .andExpect(jsonPath("_links.index").exists())
     ;
+  }
+
+  @Test
+  @DisplayName("30개의 이벤트를 10개씩 두번째 페이지 조회하기")
+  public void query_events() throws Exception {
+    // given
+    IntStream.range(0, 30).forEach(i -> this.generatedEvent(i));
+
+    // when
+    mockMvc.perform(get("/api/events")
+                    .param("page", "1")
+                    .param("size", "10")
+                    .param("sort", String.format("%s%c%s", "name", ',', "DESC")))
+           .andDo(print())
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("page").exists())
+           .andExpect(jsonPath("_embedded.eventResourceList[0]._links.self").exists())
+           .andExpect(jsonPath("_links.self").exists())
+           .andExpect(jsonPath("_links.profile").exists())
+           .andDo(document("query-events",
+                           links(
+                             linkWithRel("first").description("link to first page"),
+                             linkWithRel("prev").description("link to previous page"),
+                             linkWithRel("self").description("link to current page"),
+                             linkWithRel("next").description("link to next page"),
+                             linkWithRel("last").description("link to last page"),
+                             linkWithRel("profile").description("link to events list profile")
+                           ),
+                           requestParameters(
+                             parameterWithName("page").description("page number of query event list"),
+                             parameterWithName("size").description("elements count of query event list"),
+                             parameterWithName("sort").description("sort conditions of query event list")
+                           ),
+                           responseFields(
+                             fieldWithPath("_embedded.eventResourceList").description("event resource list"),
+                             fieldWithPath("_embedded.eventResourceList[].id").description("id of event"),
+                             fieldWithPath("_embedded.eventResourceList[].name").description("name of event"),
+                             fieldWithPath("_embedded.eventResourceList[].description").description("description of event"),
+                             fieldWithPath("_embedded.eventResourceList[].beginEnrollmentDateTime").description("beginEnrollmentDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].closeEnrollmentDateTime").description("closeEnrollmentDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].beginEventDateTime").description("beginEventDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].endEventDateTime").description("endEventDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].location").description("location of event"),
+                             fieldWithPath("_embedded.eventResourceList[].basePrice").description("basePrice of event"),
+                             fieldWithPath("_embedded.eventResourceList[].maxPrice").description("maxPrice of event"),
+                             fieldWithPath("_embedded.eventResourceList[].limitOfEnrollment").description("limitOfEnrollment of event"),
+                             fieldWithPath("_embedded.eventResourceList[].offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("_embedded.eventResourceList[].free").description("it tells is this event is free or not"),
+                             fieldWithPath("_embedded.eventResourceList[].eventStatus").description("eventStatus of event"),
+                             fieldWithPath("_embedded.eventResourceList[]._links.self.href").description("link to event resource"),
+                             fieldWithPath("page.size").description("element count per page"),
+                             fieldWithPath("page.totalElements").description("total element count"),
+                             fieldWithPath("page.totalPages").description("total page count"),
+                             fieldWithPath("page.number").description("current page number"),
+                             fieldWithPath("_links.first.*").ignored(),
+                             fieldWithPath("_links.prev.*").ignored(),
+                             fieldWithPath("_links.next.*").ignored(),
+                             fieldWithPath("_links.self.*").ignored(),
+                             fieldWithPath("_links.next.*").ignored(),
+                             fieldWithPath("_links.last.*").ignored(),
+                             fieldWithPath("_links.profile.*").ignored()
+                           )
+                  ))
+    ;
+  }
+
+  private void generatedEvent(int i) {
+    Event event = Event.builder()
+                            .name("event " + i)
+                            .description("test event")
+                            .build();
+
+    eventRepository.save(event);
   }
 
 }
