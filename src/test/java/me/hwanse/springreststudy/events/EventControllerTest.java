@@ -11,6 +11,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedR
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,6 +35,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -296,13 +298,71 @@ public class EventControllerTest {
     ;
   }
 
-  private void generatedEvent(int i) {
+  @Test
+  @DisplayName("끼존의 이벤트를 하나 조회하기")
+  public void get_event() throws Exception {
+    // given
+    Event event = generatedEvent(100);
+
+    // when && then
+    /*
+     * Rest Docs의 PathParameter를 문서화할 경우에는 mockMvcRequestBuilder 를 사용하는 것보다
+     * RestDocumentationRequestBuilders 사용을 권장한다.
+     * 위 조건을 따르지 않으면 테스트 코드 실행 시 오류를 발생시킴
+     */
+    mockMvc.perform(RestDocumentationRequestBuilders.get("/api/events/{id}", event.getId()))
+           .andDo(print())
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("id").exists())
+           .andExpect(jsonPath("name").exists())
+           .andExpect(jsonPath("_links.self").exists())
+           .andExpect(jsonPath("_links.profile").exists())
+           .andDo(document("get-an-event",
+                           pathParameters(
+                             parameterWithName("id").description("event id to query")
+                           ),
+                           links(
+                             linkWithRel("self").description("link to self"),
+                             linkWithRel("profile").description("link to get event profile")
+                           ),
+                           responseFields(
+                             fieldWithPath("id").description("id of event"),
+                             fieldWithPath("name").description("name of event"),
+                             fieldWithPath("description").description("description of event"),
+                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of event"),
+                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of event"),
+                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of event"),
+                             fieldWithPath("endEventDateTime").description("endEventDateTime of event"),
+                             fieldWithPath("location").description("location of event"),
+                             fieldWithPath("basePrice").description("basePrice of event"),
+                             fieldWithPath("maxPrice").description("maxPrice of event"),
+                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of event"),
+                             fieldWithPath("offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("free").description("it tells is this event is free or not"),
+                             fieldWithPath("eventStatus").description("eventStatus of event"),
+                             fieldWithPath("_links.self.*").ignored(),
+                             fieldWithPath("_links.profile.*").ignored()
+                           )
+                  ))
+    ;
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 이벤트를 조회했을 때 404 응답하기")
+  public void get_event_404() throws Exception {
+    mockMvc.perform(get("/api/events/9999" ))
+           .andDo(print())
+           .andExpect(status().isNotFound())
+    ;
+  }
+
+  private Event generatedEvent(int i) {
     Event event = Event.builder()
                             .name("event " + i)
                             .description("test event")
                             .build();
 
-    eventRepository.save(event);
+    return eventRepository.save(event);
   }
 
 }
