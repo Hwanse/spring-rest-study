@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import me.hwanse.springreststudy.common.BaseControllerTest;
 import me.hwanse.springreststudy.common.RestDocsConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,15 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * 모든 홈페이지에는 index 페이지 즉 첫 home 화면이 존재하듯이
  * Rest API도 진입점이라는 것을 알리는 Index API가 필요하다
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@AutoConfigureRestDocs
-@Import(RestDocsConfiguration.class)
-@ActiveProfiles("test")
-public class IndexControllerTest {
-
-  @Autowired
-  MockMvc mockMvc;
+public class IndexControllerTest extends BaseControllerTest {
 
   @Test
   @DisplayName("index API 테스트")
