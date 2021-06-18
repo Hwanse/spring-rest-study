@@ -7,6 +7,9 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -58,4 +61,19 @@ public class Event {
       offline = true;
     }
   }
+
+  public void update(EventDto updateDto) {
+    this.name = updateDto.getName();
+    this.description = updateDto.getDescription();
+    this.beginEnrollmentDateTime = updateDto.getBeginEnrollmentDateTime();
+    this.closeEnrollmentDateTime = updateDto.getCloseEnrollmentDateTime();
+    this.beginEventDateTime = updateDto.getBeginEventDateTime();
+    this.endEventDateTime = updateDto.getEndEventDateTime();
+    this.location = updateDto.getLocation();
+    this.basePrice = updateDto.getBasePrice();
+    this.maxPrice = updateDto.getMaxPrice();
+    this.limitOfEnrollment = updateDto.getLimitOfEnrollment();
+    this.update();
+  }
+
 }

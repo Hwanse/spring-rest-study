@@ -1,6 +1,7 @@
 package me.hwanse.springreststudy.events;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import java.net.URI;
 import java.util.Optional;
@@ -10,10 +11,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -21,6 +20,7 @@ import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -90,6 +90,32 @@ public class EventController {
     eventResource.add(Link.of("/docs/index.html#resources-events-get").withRel("profile"));
     return ResponseEntity.ok(eventResource);
   }
+
+  @PutMapping("{id}")
+  public ResponseEntity updateEvent(@PathVariable Long id, @Valid @RequestBody EventDto eventDto,
+    Errors errors) {
+    Optional<Event> optionalEvent = eventRepository.findById(id);
+    if (optionalEvent.isEmpty()) {
+      return ResponseEntity.notFound().build();
+    }
+
+    if (errors.hasErrors()) {
+      return badRequest(errors);
+    }
+
+    eventValidator.validate(eventDto, errors);
+
+    if (errors.hasErrors()) {
+      return badRequest(errors);
+    }
+
+    Event event = optionalEvent.get();
+    event.update(eventDto);
+    EventResource eventResource = new EventResource(eventRepository.save(event));
+    eventResource.add(Link.of("/docs/index.html#resources-events-update").withRel("profile"));
+    return ResponseEntity.ok(eventResource);
+  }
+
 
   private ResponseEntity badRequest(Errors errors) {
     return ResponseEntity.badRequest().body(new ErrorsResource(errors));
