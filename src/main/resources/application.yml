@@ -23,3 +23,11 @@ logging:
     org.hibernate:
       SQL: debug
       type.descriptor.sql.BasicBinder: trace
+
+my-app:
+  admin-username: admin@email.com
+  admin-password: admin
+  user-username: user@email.com
+  user-password: user
+  client-id: myApp
+  client-secret: pass

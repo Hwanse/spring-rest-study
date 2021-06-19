@@ -28,6 +28,7 @@ import me.hwanse.springreststudy.account.Account;
 import me.hwanse.springreststudy.account.AccountRepository;
 import me.hwanse.springreststudy.account.AccountRole;
 import me.hwanse.springreststudy.account.AccountService;
+import me.hwanse.springreststudy.common.AppProperties;
 import me.hwanse.springreststudy.common.BaseControllerTest;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,10 +53,8 @@ public class EventControllerTest extends BaseControllerTest {
   @Autowired
   AccountRepository accountRepository;
 
-  @BeforeEach
-  public void setup() {
-    accountRepository.deleteAll();
-  }
+  @Autowired
+  AppProperties appProperties;
 
   @Test
   @DisplayName("Event 등록 - 201")
@@ -520,25 +519,12 @@ public class EventControllerTest extends BaseControllerTest {
   }
 
   private String getAccessToken() throws Exception {
-    // given
-    String username = "test@email.com";
-    String password = "test";
-    Account account = Account.builder()
-                             .email(username)
-                             .password(password)
-                             .roles(Set.of(AccountRole.ADMIN, AccountRole.USER))
-                             .build();
-    accountService.saveAccount(account);
-
-    String clientId = "myApp";
-    String clientSecret = "pass";
-
     // when & then
     ResultActions perform = mockMvc
       .perform(post("/oauth/token")
-              .with(httpBasic(clientId, clientSecret))
-              .param("username", username)
-              .param("password", password)
+              .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))
+              .param("username", appProperties.getUserUsername())
+              .param("password", appProperties.getUserPassword())
               .param("grant_type", "password"))
       .andDo(print())
       .andExpect(status().isOk())
