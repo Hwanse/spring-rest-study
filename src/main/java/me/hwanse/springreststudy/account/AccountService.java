@@ -1,7 +1,6 @@
 package me.hwanse.springreststudy.account;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -30,10 +29,10 @@ public class AccountService implements UserDetailsService {
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     Account account = accountRepository.findByEmail(username)
                                        .orElseThrow(() -> new UsernameNotFoundException(username));
-    return new User(account.getEmail(), account.getPassword(), autjprities(account.getRoles()));
+    return new AccountAdapter(account);
   }
 
-  private Collection<? extends GrantedAuthority> autjprities(Set<AccountRole> roles) {
+  private Collection<? extends GrantedAuthority> authorities(Set<AccountRole> roles) {
     return roles.stream()
          .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
          .collect(Collectors.toSet());

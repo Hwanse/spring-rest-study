@@ -1,11 +1,13 @@
 package me.hwanse.springreststudy.events;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import java.net.URI;
 import java.util.Optional;
 import javax.validation.Valid;
+import me.hwanse.springreststudy.account.Account;
+import me.hwanse.springreststudy.account.AccountAdapter;
+import me.hwanse.springreststudy.account.CurrentAccount;
 import me.hwanse.springreststudy.common.ErrorsResource;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -14,7 +16,10 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,7 +46,8 @@ public class EventController {
   // Spring HATEOAS 프로젝트에서 구 버전은 ControllerLinkBuilder 클래스 안에 포함되어 있었지만
   // 현재 버전에서는 WebMvcLinkBuilder 로 사용한다.
   @PostMapping
-  public ResponseEntity createEvent(@Valid @RequestBody EventDto eventDto, Errors errors) {
+  public ResponseEntity createEvent(@Valid @RequestBody EventDto eventDto, Errors errors,
+    @CurrentAccount Account currentUser) {
     if (errors.hasErrors()) {
       return badRequest(errors);
     }
@@ -54,6 +60,7 @@ public class EventController {
 
     Event event = modelMapper.map(eventDto, Event.class);
     event.update();
+    event.setManager(currentUser);
     Event newEvent = eventRepository.save(event);
 
     // linkTo : 컨트롤러나 핸들러 메서드로 부터 URI 정보를 읽어올 때 사용하는 메서드
@@ -71,15 +78,19 @@ public class EventController {
   }
 
   @GetMapping
-  public ResponseEntity queryEvents(Pageable pageable, PagedResourcesAssembler<Event> assembler) {
+  public ResponseEntity queryEvents(Pageable pageable, PagedResourcesAssembler<Event> assembler,
+    @CurrentAccount Account currentUser) {
     Page<Event> page = eventRepository.findAll(pageable);
     var pagedModel = assembler.toModel(page, e -> new EventResource(e));
     pagedModel.add(Link.of("/docs/index.html#resources-events-list").withRel("profile"));
+    if (currentUser != null) {
+      pagedModel.add(linkTo(EventController.class).withRel("create-event"));
+    }
     return ResponseEntity.ok(pagedModel);
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity getEvent(@PathVariable Long id) {
+  public ResponseEntity getEvent(@PathVariable Long id, @CurrentAccount Account currentUser) {
     Optional<Event> optionalEvent = eventRepository.findById(id);
     if (optionalEvent.isEmpty()) {
       return ResponseEntity.notFound().build();
@@ -88,12 +99,17 @@ public class EventController {
     Event event = optionalEvent.get();
     EventResource eventResource = new EventResource(event);
     eventResource.add(Link.of("/docs/index.html#resources-events-get").withRel("profile"));
+
+    if (event.getManager().equals(currentUser)) {
+      eventResource.add(linkTo(EventController.class).slash(event.getId()).withRel("update-event"));
+    }
+
     return ResponseEntity.ok(eventResource);
   }
 
   @PutMapping("{id}")
   public ResponseEntity updateEvent(@PathVariable Long id, @Valid @RequestBody EventDto eventDto,
-    Errors errors) {
+    Errors errors, @CurrentAccount Account currentUser) {
     Optional<Event> optionalEvent = eventRepository.findById(id);
     if (optionalEvent.isEmpty()) {
       return ResponseEntity.notFound().build();
@@ -110,9 +126,15 @@ public class EventController {
     }
 
     Event event = optionalEvent.get();
+    if (!event.getManager().equals(currentUser)) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
     event.update(eventDto);
     EventResource eventResource = new EventResource(eventRepository.save(event));
     eventResource.add(Link.of("/docs/index.html#resources-events-update").withRel("profile"));
+
+
     return ResponseEntity.ok(eventResource);
   }
 

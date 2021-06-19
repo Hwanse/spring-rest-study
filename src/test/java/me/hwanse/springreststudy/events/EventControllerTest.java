@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.IntStream;
 import me.hwanse.springreststudy.account.Account;
+import me.hwanse.springreststudy.account.AccountAdapter;
 import me.hwanse.springreststudy.account.AccountRepository;
 import me.hwanse.springreststudy.account.AccountRole;
 import me.hwanse.springreststudy.account.AccountService;
@@ -77,6 +78,7 @@ public class EventControllerTest extends BaseControllerTest {
            .andExpect(jsonPath("free").value(false))
            .andExpect(jsonPath("offline").value(true))
            .andExpect(jsonPath("eventStatus").value(EventStatus.DRAFT.name()))
+           .andExpect(jsonPath("manager").value(Matchers.notNullValue()))
            .andExpect(jsonPath("_links.self").exists())
            .andExpect(jsonPath("_links.query-events").exists())
            .andExpect(jsonPath("_links.update-event").exists())
@@ -124,7 +126,8 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("offline").description("it tells if this event is offline or not"),
                              fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of new event"),
-                             fieldWithPath("manager").description("manager of new event"),
+                             fieldWithPath("manager.*").description("manager information of new event"),
+                             fieldWithPath("manager.roles").ignored(),
                              fieldWithPath("_links.*").ignored(), // 이렇게 필드를 명시적으로 ignore 하는 것도 가능하다
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.query-events.*").ignored(),
@@ -276,7 +279,8 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("_embedded.eventResourceList[].offline").description("it tells if this event is offline or not"),
                              fieldWithPath("_embedded.eventResourceList[].free").description("it tells is this event is free or not"),
                              fieldWithPath("_embedded.eventResourceList[].eventStatus").description("eventStatus of event"),
-                             fieldWithPath("_embedded.eventResourceList[].manager").description("manager of event"),
+                             fieldWithPath("_embedded.eventResourceList[].manager.*").description("manager information of event"),
+                             fieldWithPath("_embedded.eventResourceList[].manager.roles").ignored(),
                              fieldWithPath("_embedded.eventResourceList[]._links.self.href").description("link to event resource"),
                              fieldWithPath("page.size").description("element count per page"),
                              fieldWithPath("page.totalElements").description("total element count"),
@@ -289,6 +293,76 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("_links.next.*").ignored(),
                              fieldWithPath("_links.last.*").ignored(),
                              fieldWithPath("_links.profile.*").ignored()
+                           )
+           ))
+    ;
+  }
+
+  @Test
+  @DisplayName("30개의 이벤트를 10개씩 두번째 페이지 조회(인증된 사용자)")
+  public void query_events_with_authentication() throws Exception {
+    // given
+    IntStream.range(0, 30).forEach(i -> this.generatedEvent(i));
+
+    // when
+    mockMvc.perform(get("/api/events")
+                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                      .param("page", "1")
+                      .param("size", "10")
+                      .param("sort", String.format("%s%c%s", "name", ',', "DESC")))
+           .andDo(print())
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("page").exists())
+           .andExpect(jsonPath("_embedded.eventResourceList[0]._links.self").exists())
+           .andExpect(jsonPath("_links.self").exists())
+           .andExpect(jsonPath("_links.profile").exists())
+           .andExpect(jsonPath("_links.create-event").exists())
+           .andDo(document("query-events",
+                           links(
+                             linkWithRel("first").description("link to first page"),
+                             linkWithRel("prev").description("link to previous page"),
+                             linkWithRel("self").description("link to current page"),
+                             linkWithRel("next").description("link to next page"),
+                             linkWithRel("last").description("link to last page"),
+                             linkWithRel("profile").description("link to events list profile"),
+                             linkWithRel("create-event").description("link to create event")
+                           ),
+                           requestParameters(
+                             parameterWithName("page").description("page number of query event list"),
+                             parameterWithName("size").description("elements count of query event list"),
+                             parameterWithName("sort").description("sort conditions of query event list")
+                           ),
+                           responseFields(
+                             fieldWithPath("_embedded.eventResourceList").description("event resource list"),
+                             fieldWithPath("_embedded.eventResourceList[].id").description("id of event"),
+                             fieldWithPath("_embedded.eventResourceList[].name").description("name of event"),
+                             fieldWithPath("_embedded.eventResourceList[].description").description("description of event"),
+                             fieldWithPath("_embedded.eventResourceList[].beginEnrollmentDateTime").description("beginEnrollmentDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].closeEnrollmentDateTime").description("closeEnrollmentDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].beginEventDateTime").description("beginEventDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].endEventDateTime").description("endEventDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].location").description("location of event"),
+                             fieldWithPath("_embedded.eventResourceList[].basePrice").description("basePrice of event"),
+                             fieldWithPath("_embedded.eventResourceList[].maxPrice").description("maxPrice of event"),
+                             fieldWithPath("_embedded.eventResourceList[].limitOfEnrollment").description("limitOfEnrollment of event"),
+                             fieldWithPath("_embedded.eventResourceList[].offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("_embedded.eventResourceList[].free").description("it tells is this event is free or not"),
+                             fieldWithPath("_embedded.eventResourceList[].eventStatus").description("eventStatus of event"),
+                             fieldWithPath("_embedded.eventResourceList[].manager.*").description("manager information of event"),
+                             fieldWithPath("_embedded.eventResourceList[].manager.roles").ignored(),
+                             fieldWithPath("_embedded.eventResourceList[]._links.self.href").description("link to event resource"),
+                             fieldWithPath("page.size").description("element count per page"),
+                             fieldWithPath("page.totalElements").description("total element count"),
+                             fieldWithPath("page.totalPages").description("total page count"),
+                             fieldWithPath("page.number").description("current page number"),
+                             fieldWithPath("_links.first.*").ignored(),
+                             fieldWithPath("_links.prev.*").ignored(),
+                             fieldWithPath("_links.next.*").ignored(),
+                             fieldWithPath("_links.self.*").ignored(),
+                             fieldWithPath("_links.next.*").ignored(),
+                             fieldWithPath("_links.last.*").ignored(),
+                             fieldWithPath("_links.profile.*").ignored(),
+                             fieldWithPath("_links.create-event.*").ignored()
                            )
            ))
     ;
@@ -336,9 +410,63 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("offline").description("it tells if this event is offline or not"),
                              fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of event"),
-                             fieldWithPath("manager").description("manager of event"),
+                             fieldWithPath("manager.*").description("manager information of event"),
+                             fieldWithPath("manager.roles").ignored(),
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.profile.*").ignored()
+                           )
+           ))
+    ;
+  }
+
+  @Test
+  @DisplayName("Event 조회 - success (인증된 사용자)")
+  public void get_event_with_authentication() throws Exception {
+    // given
+    Event event = generatedEvent(100);
+
+    // when && then
+    /*
+     * Rest Docs의 PathParameter를 문서화할 경우에는 mockMvcRequestBuilder 를 사용하는 것보다
+     * RestDocumentationRequestBuilders 사용을 권장한다.
+     * 위 조건을 따르지 않으면 테스트 코드 실행 시 오류를 발생시킴
+     */
+    mockMvc.perform(RestDocumentationRequestBuilders.get("/api/events/{id}", event.getId()))
+           .andDo(print())
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("id").exists())
+           .andExpect(jsonPath("name").exists())
+           .andExpect(jsonPath("_links.self").exists())
+           .andExpect(jsonPath("_links.profile").exists())
+           .andDo(document("get-an-event",
+                           pathParameters(
+                             parameterWithName("id").description("event id to query")
+                           ),
+                           links(
+                             linkWithRel("self").description("link to self"),
+                             linkWithRel("profile").description("link to get event profile"),
+                             linkWithRel("update-event").description("link to update event")
+                           ),
+                           responseFields(
+                             fieldWithPath("id").description("id of event"),
+                             fieldWithPath("name").description("name of event"),
+                             fieldWithPath("description").description("description of event"),
+                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of event"),
+                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of event"),
+                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of event"),
+                             fieldWithPath("endEventDateTime").description("endEventDateTime of event"),
+                             fieldWithPath("location").description("location of event"),
+                             fieldWithPath("basePrice").description("basePrice of event"),
+                             fieldWithPath("maxPrice").description("maxPrice of event"),
+                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of event"),
+                             fieldWithPath("offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("free").description("it tells is this event is free or not"),
+                             fieldWithPath("eventStatus").description("eventStatus of event"),
+                             fieldWithPath("manager.*").description("manager information of event"),
+                             fieldWithPath("manager.roles").ignored(),
+                             fieldWithPath("_links.self.*").ignored(),
+                             fieldWithPath("_links.profile.*").ignored(),
+                             fieldWithPath("_links.update-event.*").ignored()
                            )
            ))
     ;
@@ -429,11 +557,97 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("offline").description("it tells if this event is offline or not"),
                              fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of updated event"),
-                             fieldWithPath("manager").description("manager of updated event"),
+                             fieldWithPath("manager.*").description("manager information of event"),
+                             fieldWithPath("manager.roles").ignored(),
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.profile.*").ignored()
                            )
                   ))
+    ;
+  }
+
+  @Test
+  @DisplayName("Event 수정 - event manager가 아닐 때")
+  public void event_update_not_match_authentication() throws Exception {
+    // given
+    Event event = generatedEvent(1);
+    EventDto eventDto = EventDto
+      .builder()
+      .name("Spring")
+      .description("REST API Development with Spring")
+      .beginEnrollmentDateTime(LocalDateTime.of(2021, 6, 18, 22, 50))
+      .closeEnrollmentDateTime(LocalDateTime.of(2021, 6, 19, 22, 50))
+      .beginEventDateTime(LocalDateTime.of(2021, 6, 20, 12, 0))
+      .endEventDateTime(LocalDateTime.of(2021, 6, 21, 12, 0))
+      .basePrice(0)
+      .maxPrice(0)
+      .limitOfEnrollment(100)
+      .location(null)
+      .build();
+
+    // when
+    mockMvc.perform(RestDocumentationRequestBuilders.put("/api/events/{id}", event.getId())
+                                                    .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                                                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                    .accept(MediaTypes.HAL_JSON_VALUE)
+                                                    .content(objectMapper.writeValueAsString(eventDto)))
+           .andDo(print())
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("id").exists())
+           .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_VALUE))
+           .andExpect(jsonPath("id").value(Matchers.not(100L)))
+           .andExpect(jsonPath("free").value(true))
+           .andExpect(jsonPath("offline").value(false))
+           .andExpect(jsonPath("_links.self").exists())
+           .andExpect(jsonPath("_links.profile").exists())
+           .andDo(document("update-event",
+                           links(
+                             linkWithRel("self").description("link to self"),
+                             linkWithRel("profile").description("link to update event profile")
+                           ),
+                           requestHeaders(
+                             headerWithName(HttpHeaders.CONTENT_TYPE).description("content type header"),
+                             headerWithName(HttpHeaders.ACCEPT).description("accept header")
+                           ),
+                           pathParameters(
+                             parameterWithName("id").description("event id to query")
+                           ),
+                           requestFields(
+                             fieldWithPath("name").description("name of event to update"),
+                             fieldWithPath("description").description("description of event to update"),
+                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of event to update"),
+                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of event to update"),
+                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of event to update"),
+                             fieldWithPath("endEventDateTime").description("endEventDateTime of event to update"),
+                             fieldWithPath("location").description("location of event to update"),
+                             fieldWithPath("basePrice").description("basePrice of event to update"),
+                             fieldWithPath("maxPrice").description("maxPrice of event to update"),
+                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of event to update")
+                           ),
+                           responseHeaders(
+                             headerWithName(HttpHeaders.CONTENT_TYPE).description("content type header")
+                           ),
+                           responseFields(
+                             fieldWithPath("id").description("id of updated event"),
+                             fieldWithPath("name").description("name of updated event"),
+                             fieldWithPath("description").description("description of updated event"),
+                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of updated event"),
+                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of updated event"),
+                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of updated event"),
+                             fieldWithPath("endEventDateTime").description("endEventDateTime of updated event"),
+                             fieldWithPath("location").description("location of updated event"),
+                             fieldWithPath("basePrice").description("basePrice of updated event"),
+                             fieldWithPath("maxPrice").description("maxPrice of updated event"),
+                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of updated event"),
+                             fieldWithPath("offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("free").description("it tells is this event is free or not"),
+                             fieldWithPath("eventStatus").description("eventStatus of updated event"),
+                             fieldWithPath("manager.*").description("manager information of event"),
+                             fieldWithPath("manager.roles").ignored(),
+                             fieldWithPath("_links.self.*").ignored(),
+                             fieldWithPath("_links.profile.*").ignored()
+                           )
+           ))
     ;
   }
 
