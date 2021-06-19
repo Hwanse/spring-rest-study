@@ -134,7 +134,6 @@ public class EventController {
     EventResource eventResource = new EventResource(eventRepository.save(event));
     eventResource.add(Link.of("/docs/index.html#resources-events-update").withRel("profile"));
 
-
     return ResponseEntity.ok(eventResource);
   }
 

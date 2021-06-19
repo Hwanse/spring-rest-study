@@ -1,5 +1,6 @@
 package me.hwanse.springreststudy.events;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.LocalDateTime;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -16,6 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import me.hwanse.springreststudy.account.Account;
+import me.hwanse.springreststudy.account.AccountSerializer;
 
 @Entity
 @Builder
@@ -45,6 +47,7 @@ public class Event {
   @Enumerated(EnumType.STRING)
   private EventStatus eventStatus = EventStatus.DRAFT;
 
+  @JsonSerialize(using = AccountSerializer.class)
   @ManyToOne
   private Account manager;
 

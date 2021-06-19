@@ -65,7 +65,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // then
     mockMvc.perform(post("/api/events")
-                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                      .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(event)))
@@ -127,7 +127,6 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of new event"),
                              fieldWithPath("manager.*").description("manager information of new event"),
-                             fieldWithPath("manager.roles").ignored(),
                              fieldWithPath("_links.*").ignored(), // 이렇게 필드를 명시적으로 ignore 하는 것도 가능하다
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.query-events.*").ignored(),
@@ -166,7 +165,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // then
     mockMvc.perform(post("/api/events")
-                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                      .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(event)))
@@ -184,7 +183,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // then
     mockMvc.perform(post("/api/events")
-                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                      .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(event)))
@@ -216,7 +215,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // then
     mockMvc.perform(post("/api/events")
-                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                      .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(eventDto)))
@@ -280,7 +279,6 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("_embedded.eventResourceList[].free").description("it tells is this event is free or not"),
                              fieldWithPath("_embedded.eventResourceList[].eventStatus").description("eventStatus of event"),
                              fieldWithPath("_embedded.eventResourceList[].manager.*").description("manager information of event"),
-                             fieldWithPath("_embedded.eventResourceList[].manager.roles").ignored(),
                              fieldWithPath("_embedded.eventResourceList[]._links.self.href").description("link to event resource"),
                              fieldWithPath("page.size").description("element count per page"),
                              fieldWithPath("page.totalElements").description("total element count"),
@@ -306,7 +304,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when
     mockMvc.perform(get("/api/events")
-                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                      .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                       .param("page", "1")
                       .param("size", "10")
                       .param("sort", String.format("%s%c%s", "name", ',', "DESC")))
@@ -349,7 +347,6 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("_embedded.eventResourceList[].free").description("it tells is this event is free or not"),
                              fieldWithPath("_embedded.eventResourceList[].eventStatus").description("eventStatus of event"),
                              fieldWithPath("_embedded.eventResourceList[].manager.*").description("manager information of event"),
-                             fieldWithPath("_embedded.eventResourceList[].manager.roles").ignored(),
                              fieldWithPath("_embedded.eventResourceList[]._links.self.href").description("link to event resource"),
                              fieldWithPath("page.size").description("element count per page"),
                              fieldWithPath("page.totalElements").description("total element count"),
@@ -411,7 +408,6 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of event"),
                              fieldWithPath("manager.*").description("manager information of event"),
-                             fieldWithPath("manager.roles").ignored(),
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.profile.*").ignored()
                            )
@@ -431,7 +427,8 @@ public class EventControllerTest extends BaseControllerTest {
      * RestDocumentationRequestBuilders 사용을 권장한다.
      * 위 조건을 따르지 않으면 테스트 코드 실행 시 오류를 발생시킴
      */
-    mockMvc.perform(RestDocumentationRequestBuilders.get("/api/events/{id}", event.getId()))
+    mockMvc.perform(RestDocumentationRequestBuilders.get("/api/events/{id}", event.getId())
+                                                    .header(HttpHeaders.AUTHORIZATION, getUserBearerToken()))
            .andDo(print())
            .andExpect(status().isOk())
            .andExpect(jsonPath("id").exists())
@@ -463,7 +460,6 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of event"),
                              fieldWithPath("manager.*").description("manager information of event"),
-                             fieldWithPath("manager.roles").ignored(),
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.profile.*").ignored(),
                              fieldWithPath("_links.update-event.*").ignored()
@@ -502,7 +498,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when
     mockMvc.perform(RestDocumentationRequestBuilders.put("/api/events/{id}", event.getId())
-                                                    .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                                                    .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                                                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                                                     .accept(MediaTypes.HAL_JSON_VALUE)
                                                     .content(objectMapper.writeValueAsString(eventDto)))
@@ -558,11 +554,39 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of updated event"),
                              fieldWithPath("manager.*").description("manager information of event"),
-                             fieldWithPath("manager.roles").ignored(),
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.profile.*").ignored()
                            )
                   ))
+    ;
+  }
+
+  @Test
+  @DisplayName("Event 수정 - 인증 정보가 없을 때")
+  public void event_update_unAuthenticated() throws Exception {
+    // given
+    Event event = generatedEvent(1);
+    EventDto eventDto = EventDto
+      .builder()
+      .name("Spring")
+      .description("REST API Development with Spring")
+      .beginEnrollmentDateTime(LocalDateTime.of(2021, 6, 18, 22, 50))
+      .closeEnrollmentDateTime(LocalDateTime.of(2021, 6, 19, 22, 50))
+      .beginEventDateTime(LocalDateTime.of(2021, 6, 20, 12, 0))
+      .endEventDateTime(LocalDateTime.of(2021, 6, 21, 12, 0))
+      .basePrice(0)
+      .maxPrice(0)
+      .limitOfEnrollment(100)
+      .location(null)
+      .build();
+
+    // when
+    mockMvc.perform(RestDocumentationRequestBuilders.put("/api/events/{id}", event.getId())
+                                                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                                    .accept(MediaTypes.HAL_JSON_VALUE)
+                                                    .content(objectMapper.writeValueAsString(eventDto)))
+           .andDo(print())
+           .andExpect(status().isUnauthorized())
     ;
   }
 
@@ -587,67 +611,12 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when
     mockMvc.perform(RestDocumentationRequestBuilders.put("/api/events/{id}", event.getId())
-                                                    .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                                                    .header(HttpHeaders.AUTHORIZATION, getAdminBearerToken())
                                                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                                                     .accept(MediaTypes.HAL_JSON_VALUE)
                                                     .content(objectMapper.writeValueAsString(eventDto)))
            .andDo(print())
-           .andExpect(status().isOk())
-           .andExpect(jsonPath("id").exists())
-           .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_VALUE))
-           .andExpect(jsonPath("id").value(Matchers.not(100L)))
-           .andExpect(jsonPath("free").value(true))
-           .andExpect(jsonPath("offline").value(false))
-           .andExpect(jsonPath("_links.self").exists())
-           .andExpect(jsonPath("_links.profile").exists())
-           .andDo(document("update-event",
-                           links(
-                             linkWithRel("self").description("link to self"),
-                             linkWithRel("profile").description("link to update event profile")
-                           ),
-                           requestHeaders(
-                             headerWithName(HttpHeaders.CONTENT_TYPE).description("content type header"),
-                             headerWithName(HttpHeaders.ACCEPT).description("accept header")
-                           ),
-                           pathParameters(
-                             parameterWithName("id").description("event id to query")
-                           ),
-                           requestFields(
-                             fieldWithPath("name").description("name of event to update"),
-                             fieldWithPath("description").description("description of event to update"),
-                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of event to update"),
-                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of event to update"),
-                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of event to update"),
-                             fieldWithPath("endEventDateTime").description("endEventDateTime of event to update"),
-                             fieldWithPath("location").description("location of event to update"),
-                             fieldWithPath("basePrice").description("basePrice of event to update"),
-                             fieldWithPath("maxPrice").description("maxPrice of event to update"),
-                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of event to update")
-                           ),
-                           responseHeaders(
-                             headerWithName(HttpHeaders.CONTENT_TYPE).description("content type header")
-                           ),
-                           responseFields(
-                             fieldWithPath("id").description("id of updated event"),
-                             fieldWithPath("name").description("name of updated event"),
-                             fieldWithPath("description").description("description of updated event"),
-                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of updated event"),
-                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of updated event"),
-                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of updated event"),
-                             fieldWithPath("endEventDateTime").description("endEventDateTime of updated event"),
-                             fieldWithPath("location").description("location of updated event"),
-                             fieldWithPath("basePrice").description("basePrice of updated event"),
-                             fieldWithPath("maxPrice").description("maxPrice of updated event"),
-                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of updated event"),
-                             fieldWithPath("offline").description("it tells if this event is offline or not"),
-                             fieldWithPath("free").description("it tells is this event is free or not"),
-                             fieldWithPath("eventStatus").description("eventStatus of updated event"),
-                             fieldWithPath("manager.*").description("manager information of event"),
-                             fieldWithPath("manager.roles").ignored(),
-                             fieldWithPath("_links.self.*").ignored(),
-                             fieldWithPath("_links.profile.*").ignored()
-                           )
-           ))
+           .andExpect(status().isUnauthorized())
     ;
   }
 
@@ -662,7 +631,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when
     mockMvc.perform(put("/api/events/{id}", event.getId())
-                    .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                    .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .accept(MediaTypes.HAL_JSON_VALUE)
                     .content(objectMapper.writeValueAsString(eventDto)))
@@ -682,7 +651,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when
     mockMvc.perform(put("/api/events/9999")
-                    .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                    .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .accept(MediaTypes.HAL_JSON_VALUE)
                     .content(objectMapper.writeValueAsString(eventDto)))
@@ -712,7 +681,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when & then
     mockMvc.perform(put("/api/events/{id}", event.getId())
-                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                      .header(HttpHeaders.AUTHORIZATION, getUserBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(eventDto)))
@@ -728,17 +697,21 @@ public class EventControllerTest extends BaseControllerTest {
     ;
   }
 
-  private String getBearerToken() throws Exception {
-    return "Bearer" + getAccessToken();
+  private String getAdminBearerToken() throws Exception {
+    return "Bearer" + getAccessToken(appProperties.getAdminUsername(), appProperties.getAdminPassword());
   }
 
-  private String getAccessToken() throws Exception {
+  private String getUserBearerToken() throws Exception {
+    return "Bearer" + getAccessToken(appProperties.getUserUsername(), appProperties.getUserPassword());
+  }
+
+  private String getAccessToken(String username, String password) throws Exception {
     // when & then
     ResultActions perform = mockMvc
       .perform(post("/oauth/token")
               .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))
-              .param("username", appProperties.getUserUsername())
-              .param("password", appProperties.getUserPassword())
+              .param("username", username)
+              .param("password", password)
               .param("grant_type", "password"))
       .andDo(print())
       .andExpect(status().isOk())
@@ -766,10 +739,13 @@ public class EventControllerTest extends BaseControllerTest {
   }
 
   private Event generatedEvent(int i) {
+    Account account = accountRepository.findByEmail(appProperties.getUserUsername()).orElseThrow();
+
     Event event = Event.builder()
                        .name("event " + i)
                        .description("test event")
                        .eventStatus(EventStatus.DRAFT)
+                       .manager(account)
                        .build();
 
     return eventRepository.save(event);
