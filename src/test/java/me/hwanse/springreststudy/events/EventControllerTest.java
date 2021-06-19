@@ -12,6 +12,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -21,9 +22,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.stream.IntStream;
+import me.hwanse.springreststudy.account.Account;
+import me.hwanse.springreststudy.account.AccountRepository;
+import me.hwanse.springreststudy.account.AccountRole;
+import me.hwanse.springreststudy.account.AccountService;
 import me.hwanse.springreststudy.common.BaseControllerTest;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +38,24 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
+import org.springframework.security.oauth2.common.util.Jackson2JsonParser;
+import org.springframework.test.web.servlet.ResultActions;
 
 public class EventControllerTest extends BaseControllerTest {
 
   @Autowired
   EventRepository eventRepository;
+
+  @Autowired
+  AccountService accountService;
+
+  @Autowired
+  AccountRepository accountRepository;
+
+  @BeforeEach
+  public void setup() {
+    accountRepository.deleteAll();
+  }
 
   @Test
   @DisplayName("Event 등록 - 201")
@@ -45,6 +65,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // then
     mockMvc.perform(post("/api/events")
+                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(event)))
@@ -93,24 +114,18 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("id").description("id of new event"),
                              fieldWithPath("name").description("name of new event"),
                              fieldWithPath("description").description("description of new event"),
-                             fieldWithPath("beginEnrollmentDateTime")
-                               .description("beginEnrollmentDateTime of new event"),
-                             fieldWithPath("closeEnrollmentDateTime")
-                               .description("closeEnrollmentDateTime of new event"),
-                             fieldWithPath("beginEventDateTime")
-                               .description("beginEventDateTime of new event"),
-                             fieldWithPath("endEventDateTime")
-                               .description("endEventDateTime of new event"),
+                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of new event"),
+                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of new event"),
+                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of new event"),
+                             fieldWithPath("endEventDateTime").description("endEventDateTime of new event"),
                              fieldWithPath("location").description("location of new event"),
                              fieldWithPath("basePrice").description("basePrice of new event"),
                              fieldWithPath("maxPrice").description("maxPrice of new event"),
-                             fieldWithPath("limitOfEnrollment")
-                               .description("limitOfEnrollment of new event"),
-                             fieldWithPath("offline")
-                               .description("it tells if this event is offline or not"),
-                             fieldWithPath("free")
-                               .description("it tells is this event is free or not"),
+                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of new event"),
+                             fieldWithPath("offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of new event"),
+                             fieldWithPath("manager").description("manager of new event"),
                              fieldWithPath("_links.*").ignored(), // 이렇게 필드를 명시적으로 ignore 하는 것도 가능하다
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.query-events.*").ignored(),
@@ -149,6 +164,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // then
     mockMvc.perform(post("/api/events")
+                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(event)))
@@ -166,6 +182,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // then
     mockMvc.perform(post("/api/events")
+                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(event)))
@@ -197,6 +214,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // then
     mockMvc.perform(post("/api/events")
+                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(eventDto)))
@@ -239,46 +257,28 @@ public class EventControllerTest extends BaseControllerTest {
                              linkWithRel("profile").description("link to events list profile")
                            ),
                            requestParameters(
-                             parameterWithName("page")
-                               .description("page number of query event list"),
-                             parameterWithName("size")
-                               .description("elements count of query event list"),
-                             parameterWithName("sort")
-                               .description("sort conditions of query event list")
+                             parameterWithName("page").description("page number of query event list"),
+                             parameterWithName("size").description("elements count of query event list"),
+                             parameterWithName("sort").description("sort conditions of query event list")
                            ),
                            responseFields(
-                             fieldWithPath("_embedded.eventResourceList")
-                               .description("event resource list"),
-                             fieldWithPath("_embedded.eventResourceList[].id")
-                               .description("id of event"),
-                             fieldWithPath("_embedded.eventResourceList[].name")
-                               .description("name of event"),
-                             fieldWithPath("_embedded.eventResourceList[].description")
-                               .description("description of event"),
-                             fieldWithPath("_embedded.eventResourceList[].beginEnrollmentDateTime")
-                               .description("beginEnrollmentDateTime of event"),
-                             fieldWithPath("_embedded.eventResourceList[].closeEnrollmentDateTime")
-                               .description("closeEnrollmentDateTime of event"),
-                             fieldWithPath("_embedded.eventResourceList[].beginEventDateTime")
-                               .description("beginEventDateTime of event"),
-                             fieldWithPath("_embedded.eventResourceList[].endEventDateTime")
-                               .description("endEventDateTime of event"),
-                             fieldWithPath("_embedded.eventResourceList[].location")
-                               .description("location of event"),
-                             fieldWithPath("_embedded.eventResourceList[].basePrice")
-                               .description("basePrice of event"),
-                             fieldWithPath("_embedded.eventResourceList[].maxPrice")
-                               .description("maxPrice of event"),
-                             fieldWithPath("_embedded.eventResourceList[].limitOfEnrollment")
-                               .description("limitOfEnrollment of event"),
-                             fieldWithPath("_embedded.eventResourceList[].offline")
-                               .description("it tells if this event is offline or not"),
-                             fieldWithPath("_embedded.eventResourceList[].free")
-                               .description("it tells is this event is free or not"),
-                             fieldWithPath("_embedded.eventResourceList[].eventStatus")
-                               .description("eventStatus of event"),
-                             fieldWithPath("_embedded.eventResourceList[]._links.self.href")
-                               .description("link to event resource"),
+                             fieldWithPath("_embedded.eventResourceList").description("event resource list"),
+                             fieldWithPath("_embedded.eventResourceList[].id").description("id of event"),
+                             fieldWithPath("_embedded.eventResourceList[].name").description("name of event"),
+                             fieldWithPath("_embedded.eventResourceList[].description").description("description of event"),
+                             fieldWithPath("_embedded.eventResourceList[].beginEnrollmentDateTime").description("beginEnrollmentDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].closeEnrollmentDateTime").description("closeEnrollmentDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].beginEventDateTime").description("beginEventDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].endEventDateTime").description("endEventDateTime of event"),
+                             fieldWithPath("_embedded.eventResourceList[].location").description("location of event"),
+                             fieldWithPath("_embedded.eventResourceList[].basePrice").description("basePrice of event"),
+                             fieldWithPath("_embedded.eventResourceList[].maxPrice").description("maxPrice of event"),
+                             fieldWithPath("_embedded.eventResourceList[].limitOfEnrollment").description("limitOfEnrollment of event"),
+                             fieldWithPath("_embedded.eventResourceList[].offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("_embedded.eventResourceList[].free").description("it tells is this event is free or not"),
+                             fieldWithPath("_embedded.eventResourceList[].eventStatus").description("eventStatus of event"),
+                             fieldWithPath("_embedded.eventResourceList[].manager").description("manager of event"),
+                             fieldWithPath("_embedded.eventResourceList[]._links.self.href").description("link to event resource"),
                              fieldWithPath("page.size").description("element count per page"),
                              fieldWithPath("page.totalElements").description("total element count"),
                              fieldWithPath("page.totalPages").description("total page count"),
@@ -326,24 +326,18 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("id").description("id of event"),
                              fieldWithPath("name").description("name of event"),
                              fieldWithPath("description").description("description of event"),
-                             fieldWithPath("beginEnrollmentDateTime")
-                               .description("beginEnrollmentDateTime of event"),
-                             fieldWithPath("closeEnrollmentDateTime")
-                               .description("closeEnrollmentDateTime of event"),
-                             fieldWithPath("beginEventDateTime")
-                               .description("beginEventDateTime of event"),
-                             fieldWithPath("endEventDateTime")
-                               .description("endEventDateTime of event"),
+                             fieldWithPath("beginEnrollmentDateTime").description("beginEnrollmentDateTime of event"),
+                             fieldWithPath("closeEnrollmentDateTime").description("closeEnrollmentDateTime of event"),
+                             fieldWithPath("beginEventDateTime").description("beginEventDateTime of event"),
+                             fieldWithPath("endEventDateTime").description("endEventDateTime of event"),
                              fieldWithPath("location").description("location of event"),
                              fieldWithPath("basePrice").description("basePrice of event"),
                              fieldWithPath("maxPrice").description("maxPrice of event"),
-                             fieldWithPath("limitOfEnrollment")
-                               .description("limitOfEnrollment of event"),
-                             fieldWithPath("offline")
-                               .description("it tells if this event is offline or not"),
-                             fieldWithPath("free")
-                               .description("it tells is this event is free or not"),
+                             fieldWithPath("limitOfEnrollment").description("limitOfEnrollment of event"),
+                             fieldWithPath("offline").description("it tells if this event is offline or not"),
+                             fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of event"),
+                             fieldWithPath("manager").description("manager of event"),
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.profile.*").ignored()
                            )
@@ -381,6 +375,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when
     mockMvc.perform(RestDocumentationRequestBuilders.put("/api/events/{id}", event.getId())
+                                                    .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                                                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                                                     .accept(MediaTypes.HAL_JSON_VALUE)
                                                     .content(objectMapper.writeValueAsString(eventDto)))
@@ -435,6 +430,7 @@ public class EventControllerTest extends BaseControllerTest {
                              fieldWithPath("offline").description("it tells if this event is offline or not"),
                              fieldWithPath("free").description("it tells is this event is free or not"),
                              fieldWithPath("eventStatus").description("eventStatus of updated event"),
+                             fieldWithPath("manager").description("manager of updated event"),
                              fieldWithPath("_links.self.*").ignored(),
                              fieldWithPath("_links.profile.*").ignored()
                            )
@@ -453,6 +449,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when
     mockMvc.perform(put("/api/events/{id}", event.getId())
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .accept(MediaTypes.HAL_JSON_VALUE)
                     .content(objectMapper.writeValueAsString(eventDto)))
@@ -472,9 +469,10 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when
     mockMvc.perform(put("/api/events/9999")
-                      .contentType(MediaType.APPLICATION_JSON_VALUE)
-                      .accept(MediaTypes.HAL_JSON_VALUE)
-                      .content(objectMapper.writeValueAsString(eventDto)))
+                    .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .accept(MediaTypes.HAL_JSON_VALUE)
+                    .content(objectMapper.writeValueAsString(eventDto)))
            .andDo(print())
            .andExpect(status().isNotFound())
     ;
@@ -501,6 +499,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     // when & then
     mockMvc.perform(put("/api/events/{id}", event.getId())
+                      .header(HttpHeaders.AUTHORIZATION, getBearerToken())
                       .contentType(MediaType.APPLICATION_JSON_VALUE)
                       .accept(MediaTypes.HAL_JSON)
                       .content(objectMapper.writeValueAsString(eventDto)))
@@ -514,6 +513,40 @@ public class EventControllerTest extends BaseControllerTest {
            // 홈페이지에서 에러 발생시 첫 화면으로 돌아가듯이 REST API도 Index API 링크를 같이 반환해준다
            .andExpect(jsonPath("_links.index").exists())
     ;
+  }
+
+  private String getBearerToken() throws Exception {
+    return "Bearer" + getAccessToken();
+  }
+
+  private String getAccessToken() throws Exception {
+    // given
+    String username = "test@email.com";
+    String password = "test";
+    Account account = Account.builder()
+                             .email(username)
+                             .password(password)
+                             .roles(Set.of(AccountRole.ADMIN, AccountRole.USER))
+                             .build();
+    accountService.saveAccount(account);
+
+    String clientId = "myApp";
+    String clientSecret = "pass";
+
+    // when & then
+    ResultActions perform = mockMvc
+      .perform(post("/oauth/token")
+              .with(httpBasic(clientId, clientSecret))
+              .param("username", username)
+              .param("password", password)
+              .param("grant_type", "password"))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("access_token").exists());
+
+    String responseBody = perform.andReturn().getResponse().getContentAsString();
+    Jackson2JsonParser parser = new Jackson2JsonParser();
+    return parser.parseMap(responseBody).get("access_token").toString();
   }
 
   private EventDto getEventDto() {
